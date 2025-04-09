@@ -1,13 +1,14 @@
 (function () {
   const termsPolicyUrl =
-    window.termsPolicyUrl || "https://learn.mastermind.com/legal?page=privacy";
+    window.termsPolicyUrl || "https://example.com/privacy-policy"; // fallback
+
   const consentCookieName = "cookie_consent";
   const acceptedValue = "accepted";
   const declinedValue = "declined";
 
   function setConsent(value) {
     const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + 6); // 6 months
+    expiry.setMonth(expiry.getMonth() + 6);
     document.cookie = `${consentCookieName}=${value}; expires=${expiry.toUTCString()}; path=/`;
   }
 

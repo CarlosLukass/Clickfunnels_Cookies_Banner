@@ -1,14 +1,13 @@
 (function () {
   const termsPolicyUrl =
-    window.termsPolicyUrl || "https://example.com/privacy-policy"; // fallback
-
+    window.termsPolicyUrl || "https://example.com/privacy-policy";
   const consentCookieName = "cookie_consent";
   const acceptedValue = "accepted";
   const declinedValue = "declined";
 
   function setConsent(value) {
     const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + 6);
+    expiry.setMonth(expiry.getMonth() + 6); // 6-month expiration
     document.cookie = `${consentCookieName}=${value}; expires=${expiry.toUTCString()}; path=/`;
   }
 
@@ -18,7 +17,7 @@
     );
     return match ? match[1] : null;
   }
-  //
+
   function enableTrackingScripts() {
     const scripts = document.querySelectorAll(
       'script[type="text/plain"][data-cookieconsent="tracking"]'
@@ -71,14 +70,80 @@
       });
   };
 
+  // --- Affiliate Tracker Logic (runs only if NOT accepted) ---
+  function startAffiliateTracker() {
+    function getSnowplowDuid() {
+      try {
+        const cookie = document.cookie.match(/_sp_id\..*?=([^;]+)/);
+        const value = cookie ? decodeURIComponent(cookie[1]) : null;
+        const parts = value ? value.split(".") : [];
+        return {
+          domain_userid: parts[0] || "",
+          domain_sessionidx: parts[6] || "",
+          domain_sessionid: parts[7] || "",
+        };
+      } catch (e) {
+        return {
+          domain_userid: "",
+          domain_sessionidx: "",
+          domain_sessionid: "",
+        };
+      }
+    }
+
+    window.timout_aff = setInterval(function () {
+      const form = document.forms["cfAR"];
+      if (form) {
+        fetch("https://tracking.mastermind.com/ping/")
+          .then((res) => res.json())
+          .then((data) => {
+            const snowplowData = getSnowplowDuid();
+            const affData = {
+              affiliate_id: "{{Affiliate ID}}", // Replace these
+              sub_id: "{{Sub ID}}",
+              domain_userid: snowplowData.domain_userid,
+              domain_sessionidx: snowplowData.domain_sessionidx,
+              domain_sessionid: snowplowData.domain_sessionid,
+              IP: data.ip,
+            };
+
+            form.elements["contact[cart_affiliate_id]"].value =
+              JSON.stringify(affData);
+
+            try {
+              const parsed = JSON.parse(
+                form.elements["contact[cart_affiliate_id]"].value
+              );
+              if (typeof parsed === "object") {
+                console.log("System Ready...");
+                clearInterval(window.timout_aff);
+              } else {
+                console.log("System Not Ready...", "Cart Not An Object");
+              }
+            } catch (e) {
+              console.log("System Not Ready...", "JSON Parse Error");
+            }
+          });
+      } else {
+        console.log("System Not Ready...", "cfAR Not Created");
+      }
+    }, 2000);
+  }
+
+  // --- Consent Logic ---
   const consent = getConsent();
   if (consent === acceptedValue) {
-    enableTrackingScripts();
-  } else if (!consent) {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", window.showBanner);
-    } else {
-      window.showBanner();
+    enableTrackingScripts(); // GTM will run affiliate too
+  } else {
+    if (!consent) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", window.showBanner);
+      } else {
+        window.showBanner();
+      }
     }
+
+    // Only run affiliate tracking if NOT accepted
+    startAffiliateTracker();
   }
 })();

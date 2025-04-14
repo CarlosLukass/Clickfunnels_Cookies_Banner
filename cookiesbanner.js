@@ -66,6 +66,7 @@
       .addEventListener("click", function () {
         setConsent(declinedValue);
         document.getElementById("gdpr-banner").remove();
+        startAffiliateTracker();
       });
   };
 
@@ -132,7 +133,7 @@
   // --- Consent Logic ---
   const consent = getConsent();
   if (consent === acceptedValue) {
-    enableTrackingScripts(); // GTM will run affiliate too
+    enableTrackingScripts();
   } else {
     if (!consent) {
       if (document.readyState === "loading") {
@@ -141,8 +142,5 @@
         window.showBanner();
       }
     }
-
-    // Only run affiliate tracking if NOT accepted
-    startAffiliateTracker();
   }
 })();

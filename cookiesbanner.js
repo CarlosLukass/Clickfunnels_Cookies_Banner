@@ -93,17 +93,23 @@
 
     window.timout_aff = setInterval(function () {
       const form = document.forms["cfAR"];
+      const here = new URL(location);
+      const urlAff = here.searchParams.get("a");
+      const urlSource = here.searchParams.get("source");
+      const locAff = localStorage.getItem("affiliate");
+      const affiliate_id = urlAff || locAff;
+
       if (form) {
         fetch("https://tracking.mastermind.com/ping/")
           .then((res) => res.json())
           .then((data) => {
             const snowplowData = getSnowplowDuid();
             const affData = {
-              affiliate_id: "{{Affiliate ID}}", // Replace these
-              sub_id: "{{Sub ID}}",
-              domain_userid: snowplowData.domain_userid,
-              domain_sessionidx: snowplowData.domain_sessionidx,
-              domain_sessionid: snowplowData.domain_sessionid,
+              affiliate_id: affiliate_id || "",
+              sub_id: source || "",
+              domain_userid: snowplowData.domain_userid || "",
+              domain_sessionidx: snowplowData.domain_sessionidx || "",
+              domain_sessionid: snowplowData.domain_sessionid || "",
               IP: data.ip,
             };
 

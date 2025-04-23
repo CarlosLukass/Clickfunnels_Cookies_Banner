@@ -11,10 +11,8 @@
     document.cookie = `${consentCookieName}=${value}; expires=${expiry.toUTCString()}; path=/`;
   }
 
-  function getConsent() {
-    const match = document.cookie.match(
-      new RegExp(`${consentCookieName}=([^;]+)`)
-    );
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp(`${name}=([^;]+)`));
     return match ? match[1] : null;
   }
 
@@ -52,17 +50,21 @@
       });
   };
 
-  // --- Consent Logic ---
-  const consent = getConsent();
-  if (consent === acceptedValue) {
-    return;
-  } else {
-    if (!consent) {
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", window.showBanner);
-      } else {
-        window.showBanner();
-      }
+  // --- Consent + EU Logic ---
+  const consent = getCookie(consentCookieName);
+  const isEU = getCookie("is_eu");
+
+  const shouldShowBanner = isEU === "true" || isEU === null;
+
+  if (
+    shouldShowBanner &&
+    consent !== acceptedValue &&
+    !document.getElementById("gdpr-banner")
+  ) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", window.showBanner);
+    } else {
+      window.showBanner();
     }
   }
 })();

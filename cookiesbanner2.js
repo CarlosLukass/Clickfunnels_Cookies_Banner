@@ -50,21 +50,23 @@
       });
   };
 
-  // --- Consent + EU Logic ---
-  const consent = getCookie(consentCookieName);
-  const isEU = getCookie("is_eu");
+  function waitForIsEUCookieAndDecide() {
+    const interval = setInterval(() => {
+      const isEU = getCookie("is_eu");
+      const consent = getCookie(consentCookieName);
 
-  const shouldShowBanner = isEU === "true" || isEU === null;
-
-  if (
-    shouldShowBanner &&
-    consent !== acceptedValue &&
-    !document.getElementById("gdpr-banner")
-  ) {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", window.showBanner);
-    } else {
-      window.showBanner();
-    }
+      if (isEU !== null) {
+        clearInterval(interval);
+        if (isEU === "true" && consent !== acceptedValue) {
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", window.showBanner);
+          } else {
+            window.showBanner();
+          }
+        }
+      }
+    }, 200); // check every 200ms
   }
+
+  waitForIsEUCookieAndDecide();
 })();
